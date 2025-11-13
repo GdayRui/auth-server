@@ -5,9 +5,13 @@ provider:
   runtime: nodejs18.x
   region: ${opt:region, 'ap-southeast-2'}
   stage: ${opt:stage, 'dev'}
+  deploymentBucket:
+    name: gdayrui-deployments-bucket
   environment:
-    USER_POOL_ID: ${env:USER_POOL_ID, ''}
-    USER_POOL_CLIENT_ID: ${env:USER_POOL_CLIENT_ID, ''}
+    USER_POOL_ID:
+      Ref: CognitoUserPool
+    USER_POOL_CLIENT_ID:
+      Ref: CognitoUserPoolClient
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
   iamRoleStatements:
@@ -25,7 +29,6 @@ provider:
         - arn:aws:cognito-idp:${self:provider.region}:*:userpool/*
 
 plugins:
-  - serverless-webpack
   - serverless-offline
 
 custom:

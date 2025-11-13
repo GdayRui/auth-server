@@ -1,7 +1,6 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/handler.ts',
   target: 'node',
   mode: 'production',
   module: {
