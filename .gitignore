@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.webpack/
+.serverless/
+*.log
+.env*
+coverage/
+.nyc_output/
+.DS_Store
+Thumbs.db
+*.zip
+.vscode/
+.idea/
