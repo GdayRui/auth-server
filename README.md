@@ -97,7 +97,7 @@ Configure these secrets in your GitHub repository:
 ```
 AWS_ACCESS_KEY_ID          # AWS access key
 AWS_SECRET_ACCESS_KEY      # AWS secret key
-AWS_REGION                 # AWS region (default: us-east-1)
+AWS_REGION                 # AWS region (default: ap-southeast-2)
 DEV_USER_POOL_ID          # Development Cognito User Pool ID
 DEV_USER_POOL_CLIENT_ID   # Development Cognito Client ID
 PROD_USER_POOL_ID         # Production Cognito User Pool ID

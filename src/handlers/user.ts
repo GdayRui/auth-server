@@ -17,7 +17,7 @@ import { UpdateUserRequest, ChangePasswordRequest, CognitoUser } from '../types'
 import jwt from 'jsonwebtoken';
 
 const cognitoClient = new CognitoIdentityProviderClient({ 
-  region: process.env.REGION || 'us-east-1' 
+  region: process.env.REGION || 'ap-southeast-2' 
 });
 
 const USER_POOL_ID = process.env.USER_POOL_ID!;

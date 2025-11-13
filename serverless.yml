@@ -3,7 +3,7 @@ service: cognito-auth-server
 provider:
   name: aws
   runtime: nodejs18.x
-  region: ${opt:region, 'us-east-1'}
+  region: ${opt:region, 'ap-southeast-2'}
   stage: ${opt:stage, 'dev'}
   environment:
     USER_POOL_ID: ${env:USER_POOL_ID, ''}
