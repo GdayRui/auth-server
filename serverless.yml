@@ -31,15 +31,17 @@ provider:
 plugins:
   - serverless-offline
 
-custom:
-  webpack:
-    webpackConfig: ./webpack.config.js
-    includeModules: true
+package:
+  individually: false
+  patterns:
+    - '!**'
+    - 'dist/**'
+    - 'node_modules/**'
 
 functions:
   # Authentication endpoints
   login:
-    handler: src/handlers/auth.login
+    handler: dist/handlers/auth.login
     events:
       - http:
           path: /auth/login
@@ -47,7 +49,7 @@ functions:
           cors: true
 
   register:
-    handler: src/handlers/auth.register
+    handler: dist/handlers/auth.register
     events:
       - http:
           path: /auth/register
@@ -55,7 +57,7 @@ functions:
           cors: true
 
   refreshToken:
-    handler: src/handlers/auth.refreshToken
+    handler: dist/handlers/auth.refreshToken
     events:
       - http:
           path: /auth/refresh
@@ -63,7 +65,7 @@ functions:
           cors: true
 
   logout:
-    handler: src/handlers/auth.logout
+    handler: dist/handlers/auth.logout
     events:
       - http:
           path: /auth/logout
@@ -72,7 +74,7 @@ functions:
 
   # Token validation
   validateToken:
-    handler: src/handlers/token.validate
+    handler: dist/handlers/token.validate
     events:
       - http:
           path: /token/validate
@@ -81,7 +83,7 @@ functions:
 
   # User management
   getUser:
-    handler: src/handlers/user.getUser
+    handler: dist/handlers/user.getUser
     events:
       - http:
           path: /user/profile
@@ -89,7 +91,7 @@ functions:
           cors: true
 
   updateUser:
-    handler: src/handlers/user.updateUser
+    handler: dist/handlers/user.updateUser
     events:
       - http:
           path: /user/profile
@@ -97,7 +99,7 @@ functions:
           cors: true
 
   deleteUser:
-    handler: src/handlers/user.deleteUser
+    handler: dist/handlers/user.deleteUser
     events:
       - http:
           path: /user/profile
@@ -105,7 +107,7 @@ functions:
           cors: true
 
   changePassword:
-    handler: src/handlers/user.changePassword
+    handler: dist/handlers/user.changePassword
     events:
       - http:
           path: /user/change-password
