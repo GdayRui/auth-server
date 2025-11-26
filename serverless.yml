@@ -7,6 +7,10 @@ provider:
   stage: ${opt:stage, 'dev'}
   deploymentBucket:
     name: gdayrui-deployments-bucket
+  httpApi:
+    cors: true
+  apiGateway:
+    shouldStartNameWithService: true
   environment:
     USER_POOL_ID:
       Ref: CognitoUserPool
@@ -88,12 +92,7 @@ functions:
       - http:
           path: /user/profile
           method: get
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - Authorization
-            allowCredentials: false
+          cors: true
 
   updateUser:
     handler: dist/handlers/user.updateUser
@@ -101,12 +100,7 @@ functions:
       - http:
           path: /user/profile
           method: put
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - Authorization
-            allowCredentials: false
+          cors: true
 
   deleteUser:
     handler: dist/handlers/user.deleteUser
@@ -114,12 +108,7 @@ functions:
       - http:
           path: /user/profile
           method: delete
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - Authorization
-            allowCredentials: false
+          cors: true
 
   changePassword:
     handler: dist/handlers/user.changePassword
@@ -127,12 +116,7 @@ functions:
       - http:
           path: /user/change-password
           method: post
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - Authorization
-            allowCredentials: false
+          cors: true
 
 resources:
   Resources:
