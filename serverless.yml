@@ -7,12 +7,6 @@ provider:
   stage: ${opt:stage, 'dev'}
   deploymentBucket:
     name: gdayrui-deployments-bucket
-  httpApi:
-    cors: true
-  apiGateway:
-    shouldStartNameWithService: true
-    minimumCompressionSize: 1024
-  endpointType: REGIONAL
   environment:
     USER_POOL_ID:
       Fn::ImportValue: ${self:custom.userPoolStackName}-user-pool-id
