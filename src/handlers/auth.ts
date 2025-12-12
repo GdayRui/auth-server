@@ -24,14 +24,14 @@ const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID!;
 export const login = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const body: AuthRequest = parseRequestBody(event);
-    validateRequiredFields(body, ['email', 'password']);
+    validateRequiredFields(body, ['username', 'password']);
 
     const command = new AdminInitiateAuthCommand({
       UserPoolId: USER_POOL_ID,
       ClientId: USER_POOL_CLIENT_ID,
-      AuthFlow: 'ADMIN_NO_SRP_AUTH',
+      AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
       AuthParameters: {
-        USERNAME: body.email,
+        USERNAME: body.username,
         PASSWORD: body.password,
       },
     });
@@ -81,36 +81,41 @@ export const login = async (event: APIGatewayProxyEvent): Promise<APIGatewayProx
 export const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const body: RegisterRequest = parseRequestBody(event);
-    validateRequiredFields(body, ['email', 'password']);
+    validateRequiredFields(body, ['username', 'password', 'given_name', 'family_name']);
+
+    // Validate family_name minimum 1 character
+    if (body.family_name.length < 1) {
+      return createErrorResponse(400, 'INVALID_FAMILY_NAME', 'Family name must be at least 1 character');
+    }
 
     const userAttributes = [
       {
-        Name: 'email',
-        Value: body.email,
+        Name: 'given_name',
+        Value: body.given_name,
       },
       {
-        Name: 'email_verified',
-        Value: 'true',
+        Name: 'family_name',
+        Value: body.family_name,
       },
     ];
 
-    if (body.firstName) {
+    if (body.email) {
       userAttributes.push({
-        Name: 'given_name',
-        Value: body.firstName,
+        Name: 'email',
+        Value: body.email,
       });
     }
 
-    if (body.lastName) {
+    if (body.preferred_name) {
       userAttributes.push({
-        Name: 'family_name',
-        Value: body.lastName,
+        Name: 'preferred_name',
+        Value: body.preferred_name,
       });
     }
 
     const createCommand = new AdminCreateUserCommand({
       UserPoolId: USER_POOL_ID,
-      Username: body.email,
+      Username: body.username,
       UserAttributes: userAttributes,
       MessageAction: MessageActionType.SUPPRESS,
       TemporaryPassword: body.password,
@@ -120,7 +125,7 @@ export const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayP
 
     const setPasswordCommand = new AdminSetUserPasswordCommand({
       UserPoolId: USER_POOL_ID,
-      Username: body.email,
+      Username: body.username,
       Password: body.password,
       Permanent: true,
     });
@@ -129,7 +134,7 @@ export const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayP
 
     return createResponse(201, {
       message: 'User registered successfully',
-      data: { email: body.email }
+      data: { username: body.username }
     });
 
   } catch (error: unknown) {

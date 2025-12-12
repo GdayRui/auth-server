@@ -13,9 +13,9 @@ provider:
     shouldStartNameWithService: true
   environment:
     USER_POOL_ID:
-      Ref: CognitoUserPool
+      Fn::ImportValue: ${self:custom.userPoolStackName}-user-pool-id
     USER_POOL_CLIENT_ID:
-      Ref: CognitoUserPoolClient
+      Fn::ImportValue: ${self:custom.userPoolStackName}-user-pool-client-id
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
   iamRoleStatements:
@@ -41,6 +41,9 @@ package:
     - '!**'
     - 'dist/**'
     - 'node_modules/**'
+
+custom:
+  userPoolStackName: cognito-auth-infrastructure-${self:provider.stage}
 
 functions:
   # Authentication endpoints
@@ -119,62 +122,7 @@ functions:
           cors: true
 
 resources:
-  Resources:
-    # Cognito User Pool
-    CognitoUserPool:
-      Type: AWS::Cognito::UserPool
-      Properties:
-        UserPoolName: ${self:service}-${self:provider.stage}-user-pool
-        UsernameAttributes:
-          - email
-        AutoVerifiedAttributes:
-          - email
-        Policies:
-          PasswordPolicy:
-            MinimumLength: 8
-            RequireUppercase: true
-            RequireLowercase: true
-            RequireNumbers: true
-            RequireSymbols: true
-        Schema:
-          - Name: email
-            AttributeDataType: String
-            Mutable: true
-            Required: true
-
-    # Cognito User Pool Client
-    CognitoUserPoolClient:
-      Type: AWS::Cognito::UserPoolClient
-      Properties:
-        ClientName: ${self:service}-${self:provider.stage}-client
-        UserPoolId:
-          Ref: CognitoUserPool
-        ExplicitAuthFlows:
-          - ALLOW_ADMIN_USER_PASSWORD_AUTH
-          - ALLOW_USER_SRP_AUTH
-          - ALLOW_REFRESH_TOKEN_AUTH
-        GenerateSecret: false
-        AccessTokenValidity: 60
-        IdTokenValidity: 60
-        RefreshTokenValidity: 30
-        TokenValidityUnits:
-          AccessToken: minutes
-          IdToken: minutes
-          RefreshToken: days
-
   Outputs:
-    UserPoolId:
-      Value:
-        Ref: CognitoUserPool
-      Export:
-        Name: ${self:service}-${self:provider.stage}-user-pool-id
-
-    UserPoolClientId:
-      Value:
-        Ref: CognitoUserPoolClient
-      Export:
-        Name: ${self:service}-${self:provider.stage}-user-pool-client-id
-
     ApiGatewayRestApiId:
       Value:
         Ref: ApiGatewayRestApi
