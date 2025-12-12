@@ -19,7 +19,8 @@ This project uses a **two-stack deployment** architecture:
 This creates the Cognito User Pool with the following configuration:
 - Username-based authentication (not email)
 - Required attributes: `username`, `given_name`, `family_name`, `password`
-- Optional attributes: `email`, `preferred_name`
+- Optional attributes: `email`
+- Password policy: Minimum 8 characters with lowercase and numbers
 - Password recovery: Admin-only
 - Username: case-insensitive
 
@@ -42,20 +43,18 @@ git push origin develop     # Deploys to development
 
 New user registration requires:
 - `username` (required, unique, immutable)
-- `password` (required, 8+ chars with uppercase, lowercase, number, symbol)
+- `password` (required, 8+ chars with lowercase and numbers)
 - `given_name` (required)
 - `family_name` (required, minimum 1 character)
-- `preferred_name` (optional)
 - `email` (optional, but unique if provided)
 
 Example:
 ```json
 {
   "username": "johndoe",
-  "password": "SecurePass123!",
+  "password": "jd123123",
   "given_name": "John",
-  "family_name": "D",
-  "preferred_name": "Johnny",
+  "family_name": "Doe",
   "email": "john@example.com"
 }
 ```

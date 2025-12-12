@@ -114,15 +114,14 @@ curl -X POST https://your-api-url/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "johndoe",
-    "password": "SecurePass123!",
+    "password": "jd123123",
     "given_name": "John",
     "family_name": "Doe",
-    "preferred_name": "Johnny",
     "email": "john@example.com"
   }'
 ```
 
-**Note**: `email` and `preferred_name` are optional. `family_name` must be at least 1 character.
+**Note**: `email` is optional. `family_name` must be at least 1 character.
 
 ### Login
 ```bash
