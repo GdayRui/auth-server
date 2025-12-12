@@ -71,7 +71,7 @@ resources:
       Value:
         Ref: CognitoUserPool
       Export:
-        Name: ${self:service}-${self:provider.stage}-user-pool-id
+        Name: cognito-auth-infrastructure-${self:provider.stage}-user-pool-id
 
     UserPoolArn:
       Description: Cognito User Pool ARN
@@ -80,11 +80,11 @@ resources:
           - CognitoUserPool
           - Arn
       Export:
-        Name: ${self:service}-${self:provider.stage}-user-pool-arn
+        Name: cognito-auth-infrastructure-${self:provider.stage}-user-pool-arn
 
     UserPoolClientId:
       Description: Cognito User Pool Client ID
       Value:
         Ref: CognitoUserPoolClient
       Export:
-        Name: ${self:service}-${self:provider.stage}-user-pool-client-id
+        Name: cognito-auth-infrastructure-${self:provider.stage}-user-pool-client-id
