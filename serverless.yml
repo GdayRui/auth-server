@@ -11,6 +11,8 @@ provider:
     cors: true
   apiGateway:
     shouldStartNameWithService: true
+    minimumCompressionSize: 1024
+  endpointType: REGIONAL
   environment:
     USER_POOL_ID:
       Fn::ImportValue: ${self:custom.userPoolStackName}-user-pool-id
@@ -61,7 +63,16 @@ functions:
       - http:
           path: /auth/register
           method: post
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: false
 
   refreshToken:
     handler: dist/handlers/auth.refreshToken
