@@ -22,22 +22,21 @@ const cognitoClient = new CognitoIdentityProviderClient({
 
 const USER_POOL_ID = process.env.USER_POOL_ID!;
 
-const getUserFromToken = (token: string): { sub: string; email: string } => {
-  const decoded = jwt.decode(token) as jwt.JwtPayload & { email?: string; username?: string };
+const getUserFromToken = (token: string): { username: string } => {
+  const decoded = jwt.decode(token) as jwt.JwtPayload & { username?: string };
   return {
-    sub: decoded.sub || '',
-    email: decoded.email || decoded.username || ''
+    username: decoded.username || ''
   };
 };
 
 export const getUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const token = getAuthHeader(event);
-    const { email } = getUserFromToken(token);
+    const { username } = getUserFromToken(token);
 
     const command = new AdminGetUserCommand({
       UserPoolId: USER_POOL_ID,
-      Username: email,
+      Username: username,
     });
 
     const response = await cognitoClient.send(command);
@@ -50,10 +49,11 @@ export const getUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     });
 
     const user: CognitoUser = {
-      sub: response.Username!,
+      username: response.Username!,
       email: userAttributes.email,
-      firstName: userAttributes.given_name,
-      lastName: userAttributes.family_name,
+      given_name: userAttributes.given_name,
+      family_name: userAttributes.family_name,
+      preferred_name: userAttributes.preferred_name,
       emailVerified: userAttributes.email_verified === 'true',
       enabled: response.Enabled || false,
       userStatus: response.UserStatus!,
@@ -81,22 +81,35 @@ export const getUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 export const updateUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const token = getAuthHeader(event);
-    const { email } = getUserFromToken(token);
+    const { username } = getUserFromToken(token);
     const body: UpdateUserRequest = parseRequestBody(event);
 
     const userAttributes = [];
 
-    if (body.firstName !== undefined) {
+    if (body.given_name !== undefined) {
+      if (body.given_name.length < 1) {
+        return createErrorResponse(400, 'INVALID_GIVEN_NAME', 'Given name cannot be empty');
+      }
       userAttributes.push({
         Name: 'given_name',
-        Value: body.firstName,
+        Value: body.given_name,
       });
     }
 
-    if (body.lastName !== undefined) {
+    if (body.family_name !== undefined) {
+      if (body.family_name.length < 1) {
+        return createErrorResponse(400, 'INVALID_FAMILY_NAME', 'Family name must be at least 1 character');
+      }
       userAttributes.push({
         Name: 'family_name',
-        Value: body.lastName,
+        Value: body.family_name,
+      });
+    }
+
+    if (body.preferred_name !== undefined) {
+      userAttributes.push({
+        Name: 'preferred_name',
+        Value: body.preferred_name,
       });
     }
 
@@ -113,7 +126,7 @@ export const updateUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
 
     const command = new AdminUpdateUserAttributesCommand({
       UserPoolId: USER_POOL_ID,
-      Username: email,
+      Username: username,
       UserAttributes: userAttributes,
     });
 
@@ -138,11 +151,11 @@ export const updateUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
 export const deleteUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const token = getAuthHeader(event);
-    const { email } = getUserFromToken(token);
+    const { username } = getUserFromToken(token);
 
     const command = new AdminDeleteUserCommand({
       UserPoolId: USER_POOL_ID,
-      Username: email,
+      Username: username,
     });
 
     await cognitoClient.send(command);
@@ -166,7 +179,7 @@ export const deleteUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
 export const changePassword = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     const token = getAuthHeader(event);
-    const { email } = getUserFromToken(token);
+    const { username } = getUserFromToken(token);
     const body: ChangePasswordRequest = parseRequestBody(event);
     
     validateRequiredFields(body, ['oldPassword', 'newPassword']);
@@ -175,7 +188,7 @@ export const changePassword = async (event: APIGatewayProxyEvent): Promise<APIGa
     // For this example, we'll directly set the new password
     const command = new AdminSetUserPasswordCommand({
       UserPoolId: USER_POOL_ID,
-      Username: email,
+      Username: username,
       Password: body.newPassword,
       Permanent: true,
     });

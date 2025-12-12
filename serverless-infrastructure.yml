@@ -1,0 +1,90 @@
+service: cognito-auth-infrastructure
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ${opt:region, 'ap-southeast-2'}
+  stage: ${opt:stage, 'dev'}
+
+resources:
+  Resources:
+    # Cognito User Pool
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${self:service}-${self:provider.stage}-user-pool
+        UsernameAttributes: []  # Username is primary identifier
+        UsernameConfiguration:
+          CaseSensitive: false
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireUppercase: true
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireSymbols: true
+        Schema:
+          - Name: email
+            AttributeDataType: String
+            Mutable: true
+            Required: false
+          - Name: given_name
+            AttributeDataType: String
+            Mutable: true
+            Required: true
+          - Name: family_name
+            AttributeDataType: String
+            Mutable: true
+            Required: true
+          - Name: preferred_name
+            AttributeDataType: String
+            Mutable: true
+            Required: false
+        AccountRecoverySetting:
+          RecoveryMechanisms:
+            - Name: admin_only
+              Priority: 1
+
+    # Cognito User Pool Client
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:service}-${self:provider.stage}-client
+        UserPoolId:
+          Ref: CognitoUserPool
+        ExplicitAuthFlows:
+          - ALLOW_ADMIN_USER_PASSWORD_AUTH
+          - ALLOW_USER_SRP_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+        GenerateSecret: false
+        AccessTokenValidity: 60
+        IdTokenValidity: 60
+        RefreshTokenValidity: 30
+        TokenValidityUnits:
+          AccessToken: minutes
+          IdToken: minutes
+          RefreshToken: days
+
+  Outputs:
+    UserPoolId:
+      Description: Cognito User Pool ID
+      Value:
+        Ref: CognitoUserPool
+      Export:
+        Name: ${self:service}-${self:provider.stage}-user-pool-id
+
+    UserPoolArn:
+      Description: Cognito User Pool ARN
+      Value:
+        Fn::GetAtt:
+          - CognitoUserPool
+          - Arn
+      Export:
+        Name: ${self:service}-${self:provider.stage}-user-pool-arn
+
+    UserPoolClientId:
+      Description: Cognito User Pool Client ID
+      Value:
+        Ref: CognitoUserPoolClient
+      Export:
+        Name: ${self:service}-${self:provider.stage}-user-pool-client-id

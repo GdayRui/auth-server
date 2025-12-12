@@ -1,4 +1,4 @@
-name: Deploy Cognito Auth Server
+name: Deploy Auth Application
 
 on:
   push:

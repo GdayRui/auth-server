@@ -4,11 +4,13 @@ A serverless authentication server built with AWS Cognito, TypeScript, and the S
 
 ## Features
 
-- **User Authentication**: Login, registration, and token refresh
-- **User Management**: Profile management, password changes, and user deletion
+- **Username-Based Authentication**: Login with username/password (email optional)
+- **User Management**: Profile management with customizable attributes
+- **Self-Service Password Changes**: Users can change their own passwords when logged in
 - **Token Validation**: JWT token validation endpoints
 - **AWS Cognito Integration**: Secure user pool management
 - **Serverless Architecture**: Cost-effective AWS Lambda deployment
+- **Two-Stack Architecture**: Separate infrastructure and application deployments
 - **TypeScript**: Full type safety and better developer experience
 - **CI/CD Pipeline**: GitHub Actions for automated deployment
 
@@ -111,19 +113,23 @@ PROD_USER_POOL_CLIENT_ID  # Production Cognito Client ID
 curl -X POST https://your-api-url/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "user@example.com",
+    "username": "johndoe",
     "password": "SecurePass123!",
-    "firstName": "John",
-    "lastName": "Doe"
+    "given_name": "John",
+    "family_name": "Doe",
+    "preferred_name": "Johnny",
+    "email": "john@example.com"
   }'
 ```
+
+**Note**: `email` and `preferred_name` are optional. `family_name` must be at least 1 character.
 
 ### Login
 ```bash
 curl -X POST https://your-api-url/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "user@example.com",
+    "username": "johndoe",
     "password": "SecurePass123!"
   }'
 ```

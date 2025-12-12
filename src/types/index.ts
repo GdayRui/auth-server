@@ -1,13 +1,15 @@
 export interface AuthRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface RegisterRequest {
-  email: string;
+  username: string;
   password: string;
-  firstName?: string;
-  lastName?: string;
+  given_name: string;
+  family_name: string;
+  preferred_name?: string;
+  email?: string;
 }
 
 export interface RefreshTokenRequest {
@@ -20,17 +22,19 @@ export interface ChangePasswordRequest {
 }
 
 export interface UpdateUserRequest {
-  firstName?: string;
-  lastName?: string;
+  given_name?: string;
+  family_name?: string;
+  preferred_name?: string;
   email?: string;
 }
 
 export interface CognitoUser {
-  sub: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  emailVerified: boolean;
+  username: string;
+  email?: string;
+  given_name: string;
+  family_name: string;
+  preferred_name?: string;
+  emailVerified?: boolean;
   enabled: boolean;
   userStatus: string;
   createdDate: Date;
