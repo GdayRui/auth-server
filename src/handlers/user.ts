@@ -53,7 +53,6 @@ export const getUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       email: userAttributes.email,
       given_name: userAttributes.given_name,
       family_name: userAttributes.family_name,
-      preferred_name: userAttributes.preferred_name,
       emailVerified: userAttributes.email_verified === 'true',
       enabled: response.Enabled || false,
       userStatus: response.UserStatus!,
@@ -103,13 +102,6 @@ export const updateUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
       userAttributes.push({
         Name: 'family_name',
         Value: body.family_name,
-      });
-    }
-
-    if (body.preferred_name !== undefined) {
-      userAttributes.push({
-        Name: 'preferred_name',
-        Value: body.preferred_name,
       });
     }
 

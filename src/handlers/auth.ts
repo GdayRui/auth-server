@@ -106,13 +106,6 @@ export const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayP
       });
     }
 
-    if (body.preferred_name) {
-      userAttributes.push({
-        Name: 'preferred_name',
-        Value: body.preferred_name,
-      });
-    }
-
     const createCommand = new AdminCreateUserCommand({
       UserPoolId: USER_POOL_ID,
       Username: body.username,

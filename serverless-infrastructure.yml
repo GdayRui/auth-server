@@ -36,10 +36,6 @@ resources:
             AttributeDataType: String
             Mutable: true
             Required: true
-          - Name: preferred_name
-            AttributeDataType: String
-            Mutable: true
-            Required: false
         AccountRecoverySetting:
           RecoveryMechanisms:
             - Name: admin_only
