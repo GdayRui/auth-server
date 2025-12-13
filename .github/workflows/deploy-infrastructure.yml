@@ -55,6 +55,27 @@ jobs:
         if: inputs.action == 'deploy'
         run: npx serverless deploy --config serverless-infrastructure.yml --stage ${{ inputs.environment }} --param="appName=${{ inputs.appId }}"
 
+      - name: Create SSM Parameters
+        if: inputs.action == 'deploy'
+        run: |
+          # Get User Pool ID and Client ID from CloudFormation outputs
+          STACK_NAME="cognito-auth-infrastructure-${{ inputs.appId }}-${{ inputs.environment }}"
+          USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }} --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" --output text)
+          USER_POOL_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }} --query "Stacks[0].Outputs[?OutputKey=='UserPoolClientId'].OutputValue" --output text)
+          
+          # Create SSM parameters
+          aws ssm put-parameter --name "/auth-server/apps/${{ inputs.appId }}/${{ inputs.environment }}/user-pool-id" --value "$USER_POOL_ID" --type String --overwrite --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
+          aws ssm put-parameter --name "/auth-server/apps/${{ inputs.appId }}/${{ inputs.environment }}/user-pool-client-id" --value "$USER_POOL_CLIENT_ID" --type String --overwrite --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
+          
+          echo "SSM Parameters created successfully"
+
+      - name: Remove SSM Parameters
+        if: inputs.action == 'remove'
+        run: |
+          # Delete SSM parameters before removing stack
+          aws ssm delete-parameter --name "/auth-server/apps/${{ inputs.appId }}/${{ inputs.environment }}/user-pool-id" --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }} || true
+          aws ssm delete-parameter --name "/auth-server/apps/${{ inputs.appId }}/${{ inputs.environment }}/user-pool-client-id" --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }} || true
+
       - name: Remove Infrastructure
         if: inputs.action == 'remove'
         run: npx serverless remove --config serverless-infrastructure.yml --stage ${{ inputs.environment }} --param="appName=${{ inputs.appId }}"
