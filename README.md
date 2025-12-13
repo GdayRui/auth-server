@@ -17,22 +17,23 @@ A serverless authentication server built with AWS Cognito, TypeScript, and the S
 - **TypeScript**: Full type safety and better developer experience
 - **CI/CD Pipeline**: GitHub Actions for automated deployment
 
-## API Endpoints
+## API Documentation
 
-### Authentication
-- `POST /auth/login` - User login
-- `POST /auth/register` - User registration
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/logout` - User logout
+For complete API documentation including request/response examples, authentication flow, and error codes, see **[API.md](API.md)**.
 
-### Token Validation
-- `POST /token/validate` - Validate JWT token
+### Quick Overview
 
-### User Management
-- `GET /user/profile` - Get user profile
-- `PUT /user/profile` - Update user profile
-- `DELETE /user/profile` - Delete user account
-- `POST /user/change-password` - Change user password
+**Authentication:**
+- User registration and login
+- Token refresh and logout
+- JWT token validation
+
+**User Management:**
+- Get/update user profile
+- Change password
+- Delete account
+
+**Important:** All requests require the `X-App-ID` header to specify which application's User Pool to use.
 
 ## Setup
 
@@ -122,55 +123,27 @@ AWS_REGION                 # AWS region (default: ap-southeast-2)
 
 **Note**: User Pool IDs are no longer needed as secrets - they're stored in SSM Parameter Store and retrieved dynamically.
 
-## API Usage Examples
+## Quick Start
 
-**IMPORTANT**: All API requests must include the `X-App-ID` header to specify which app's User Pool to use.
+See **[API.md](API.md)** for complete API documentation with detailed examples.
 
-### Registration
+**Basic Usage:**
+
 ```bash
-curl -X POST https://your-api-url/auth/register \
+# Register a user
+curl -X POST https://your-api-url/dev/auth/register \
   -H "Content-Type: application/json" \
   -H "X-App-ID: kids-chat" \
-  -d '{
-    "username": "johndoe",
-    "password": "jd123123",
-    "given_name": "John",
-    "family_name": "Doe",
-    "email": "john@example.com"
-  }'
-```
+  -d '{"username":"john","password":"john1234","given_name":"John","family_name":"Doe"}'
 
-**Note**: `email` is optional. `family_name` must be at least 1 character.
-
-### Login
-```bash
-curl -X POST https://your-api-url/auth/login \
+# Login
+curl -X POST https://your-api-url/dev/auth/login \
   -H "Content-Type: application/json" \
   -H "X-App-ID: kids-chat" \
-  -d '{
-    "username": "johndoe",
-    "password": "jd123123"
-  }'
+  -d '{"username":"john","password":"john1234"}'
 ```
 
-**Note**: Users can only login to the app they registered with.
-
-### Token Validation
-```bash
-curl -X POST https://your-api-url/token/validate \
-  -H "Content-Type: application/json" \
-  -H "X-App-ID: kids-chat" \
-  -d '{
-    "token": "your-jwt-token"
-  }'
-```
-
-### Get User Profile
-```bash
-curl -X GET https://your-api-url/user/profile \
-  -H "Authorization: Bearer your-jwt-token" \
-  -H "X-App-ID: kids-chat"
-```
+**Remember:** All requests require the `X-App-ID` header!
 
 ## Configuration
 
