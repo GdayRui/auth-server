@@ -69,24 +69,22 @@ resources:
     # SSM Parameters for User Pool ID
     UserPoolIdParameter:
       Type: AWS::SSM::Parameter
+      DependsOn: CognitoUserPool
       Properties:
         Name: /auth-server/apps/${param:appName}/${self:provider.stage}/user-pool-id
         Description: Cognito User Pool ID for ${param:appName} ${self:provider.stage}
         Type: String
-        Tier: Standard
-        Value:
-          Ref: CognitoUserPool
+        Value: !Ref CognitoUserPool
 
     # SSM Parameters for User Pool Client ID
     UserPoolClientIdParameter:
       Type: AWS::SSM::Parameter
+      DependsOn: CognitoUserPoolClient
       Properties:
         Name: /auth-server/apps/${param:appName}/${self:provider.stage}/user-pool-client-id
         Description: Cognito User Pool Client ID for ${param:appName} ${self:provider.stage}
         Type: String
-        Tier: Standard
-        Value:
-          Ref: CognitoUserPoolClient
+        Value: !Ref CognitoUserPoolClient
 
   Outputs:
     UserPoolId:
