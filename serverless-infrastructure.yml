@@ -1,4 +1,4 @@
-service: cognito-auth-infrastructure
+service: cognito-auth-infrastructure-${param:appName}
 
 provider:
   name: aws
@@ -6,13 +6,17 @@ provider:
   region: ${opt:region, 'ap-southeast-2'}
   stage: ${opt:stage, 'dev'}
 
+params:
+  default:
+    appName: default-app
+
 resources:
   Resources:
     # Cognito User Pool
     CognitoUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
-        UserPoolName: ${self:service}-${self:provider.stage}-user-pool
+        UserPoolName: auth-${param:appName}-${self:provider.stage}-user-pool
         UsernameAttributes: []  # Username is primary identifier
         UsernameConfiguration:
           CaseSensitive: false
@@ -45,7 +49,7 @@ resources:
     CognitoUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
       Properties:
-        ClientName: ${self:service}-${self:provider.stage}-client
+        ClientName: auth-${param:appName}-${self:provider.stage}-client
         UserPoolId:
           Ref: CognitoUserPool
         ExplicitAuthFlows:
@@ -61,13 +65,36 @@ resources:
           IdToken: minutes
           RefreshToken: days
 
+    # SSM Parameters for User Pool ID
+    UserPoolIdParameter:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: /auth-server/apps/${param:appName}/${self:provider.stage}/user-pool-id
+        Description: Cognito User Pool ID for ${param:appName} ${self:provider.stage}
+        Type: String
+        Value:
+          Ref: CognitoUserPool
+
+    # SSM Parameters for User Pool Client ID
+    UserPoolClientIdParameter:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: /auth-server/apps/${param:appName}/${self:provider.stage}/user-pool-client-id
+        Description: Cognito User Pool Client ID for ${param:appName} ${self:provider.stage}
+        Type: String
+        Value:
+          Ref: CognitoUserPoolClient
+
   Outputs:
     UserPoolId:
       Description: Cognito User Pool ID
       Value:
         Ref: CognitoUserPool
-      Export:
-        Name: cognito-auth-infrastructure-${self:provider.stage}-user-pool-id
+
+    UserPoolClientId:
+      Description: Cognito User Pool Client ID
+      Value:
+        Ref: CognitoUserPoolClient
 
     UserPoolArn:
       Description: Cognito User Pool ARN
@@ -75,8 +102,14 @@ resources:
         Fn::GetAtt:
           - CognitoUserPool
           - Arn
-      Export:
-        Name: cognito-auth-infrastructure-${self:provider.stage}-user-pool-arn
+
+    SSMUserPoolIdPath:
+      Description: SSM Parameter path for User Pool ID
+      Value: /auth-server/apps/${param:appName}/${self:provider.stage}/user-pool-id
+
+    SSMUserPoolClientIdPath:
+      Description: SSM Parameter path for User Pool Client ID
+      Value: /auth-server/apps/${param:appName}/${self:provider.stage}/user-pool-client-id
 
     UserPoolClientId:
       Description: Cognito User Pool Client ID

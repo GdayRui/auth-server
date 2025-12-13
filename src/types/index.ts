@@ -70,3 +70,9 @@ export interface ErrorResponse {
   message: string;
   details?: string;
 }
+
+export interface AppConfig {
+  appId: string;
+  userPoolId: string;
+  userPoolClientId: string;
+}

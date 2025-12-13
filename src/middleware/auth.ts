@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import { ApiResponse, ErrorResponse } from '../types';
+import { ApiResponse, ErrorResponse, AppConfig } from '../types';
+import { getAppConfig } from '../utils/ssm';
 
 export const createResponse = <T>(
   statusCode: number,
@@ -10,7 +11,7 @@ export const createResponse = <T>(
   headers: {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-App-ID',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
     ...headers,
   },
@@ -57,5 +58,29 @@ export const validateRequiredFields = (data: unknown, requiredFields: string[]):
   
   if (missingFields.length > 0) {
     throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+  }
+};
+
+export const getAppIdFromHeader = (event: APIGatewayProxyEvent): string => {
+  const appId = event.headers['X-App-ID'] || event.headers['x-app-id'];
+  if (!appId) {
+    throw new Error('X-App-ID header is required');
+  }
+  return appId;
+};
+
+export const getAppConfigFromEvent = async (event: APIGatewayProxyEvent): Promise<AppConfig> => {
+  const appId = getAppIdFromHeader(event);
+  const stage = process.env.STAGE || 'dev';
+  
+  try {
+    const { userPoolId, userPoolClientId } = await getAppConfig(appId, stage);
+    return {
+      appId,
+      userPoolId,
+      userPoolClientId,
+    };
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to retrieve app configuration');
   }
 };

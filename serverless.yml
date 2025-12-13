@@ -8,10 +8,6 @@ provider:
   deploymentBucket:
     name: gdayrui-deployments-bucket
   environment:
-    USER_POOL_ID:
-      Fn::ImportValue: ${self:custom.userPoolStackName}-user-pool-id
-    USER_POOL_CLIENT_ID:
-      Fn::ImportValue: ${self:custom.userPoolStackName}-user-pool-client-id
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
   iamRoleStatements:
@@ -27,6 +23,12 @@ provider:
         - cognito-idp:ListUsers
       Resource: 
         - arn:aws:cognito-idp:${self:provider.region}:*:userpool/*
+    - Effect: Allow
+      Action:
+        - ssm:GetParameter
+        - ssm:GetParameters
+      Resource:
+        - arn:aws:ssm:${self:provider.region}:*:parameter/auth-server/apps/*
 
 plugins:
   - serverless-offline
@@ -39,7 +41,7 @@ package:
     - 'node_modules/**'
 
 custom:
-  userPoolStackName: cognito-auth-infrastructure-${self:provider.stage}
+  # Custom configurations can be added here if needed
 
 functions:
   # Authentication endpoints
@@ -66,6 +68,7 @@ functions:
               - X-Api-Key
               - X-Amz-Security-Token
               - X-Amz-User-Agent
+              - X-App-ID
             allowCredentials: false
 
   refreshToken:
