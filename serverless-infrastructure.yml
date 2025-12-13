@@ -110,10 +110,3 @@ resources:
     SSMUserPoolClientIdPath:
       Description: SSM Parameter path for User Pool Client ID
       Value: /auth-server/apps/${param:appName}/${self:provider.stage}/user-pool-client-id
-
-    UserPoolClientId:
-      Description: Cognito User Pool Client ID
-      Value:
-        Ref: CognitoUserPoolClient
-      Export:
-        Name: cognito-auth-infrastructure-${self:provider.stage}-user-pool-client-id
