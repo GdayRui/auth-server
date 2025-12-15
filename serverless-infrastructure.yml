@@ -5,6 +5,11 @@ provider:
   runtime: nodejs18.x
   region: ${opt:region, 'ap-southeast-2'}
   stage: ${opt:stage, 'dev'}
+  stackName: cognito-auth-infrastructure-${param:appName}-${self:provider.stage}
+
+params:
+  default:
+    appName: default-app
 
 resources:
   Resources:
@@ -12,17 +17,17 @@ resources:
     CognitoUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
-        UserPoolName: ${self:service}-${self:provider.stage}-user-pool
+        UserPoolName: auth-${param:appName}-${self:provider.stage}-user-pool
         UsernameAttributes: []  # Username is primary identifier
         UsernameConfiguration:
           CaseSensitive: false
         Policies:
           PasswordPolicy:
             MinimumLength: 8
-            RequireUppercase: true
+            RequireUppercase: false
             RequireLowercase: true
             RequireNumbers: true
-            RequireSymbols: true
+            RequireSymbols: false
         Schema:
           - Name: email
             AttributeDataType: String
@@ -36,10 +41,6 @@ resources:
             AttributeDataType: String
             Mutable: true
             Required: true
-          - Name: preferred_name
-            AttributeDataType: String
-            Mutable: true
-            Required: false
         AccountRecoverySetting:
           RecoveryMechanisms:
             - Name: admin_only
@@ -49,7 +50,7 @@ resources:
     CognitoUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
       Properties:
-        ClientName: ${self:service}-${self:provider.stage}-client
+        ClientName: auth-${param:appName}-${self:provider.stage}-client
         UserPoolId:
           Ref: CognitoUserPool
         ExplicitAuthFlows:
@@ -70,8 +71,11 @@ resources:
       Description: Cognito User Pool ID
       Value:
         Ref: CognitoUserPool
-      Export:
-        Name: ${self:service}-${self:provider.stage}-user-pool-id
+
+    UserPoolClientId:
+      Description: Cognito User Pool Client ID
+      Value:
+        Ref: CognitoUserPoolClient
 
     UserPoolArn:
       Description: Cognito User Pool ARN
@@ -79,12 +83,11 @@ resources:
         Fn::GetAtt:
           - CognitoUserPool
           - Arn
-      Export:
-        Name: ${self:service}-${self:provider.stage}-user-pool-arn
 
-    UserPoolClientId:
-      Description: Cognito User Pool Client ID
-      Value:
-        Ref: CognitoUserPoolClient
-      Export:
-        Name: ${self:service}-${self:provider.stage}-user-pool-client-id
+    SSMUserPoolIdPath:
+      Description: SSM Parameter path for User Pool ID
+      Value: /auth-server/apps/${param:appName}/${self:provider.stage}/user-pool-id
+
+    SSMUserPoolClientIdPath:
+      Description: SSM Parameter path for User Pool Client ID
+      Value: /auth-server/apps/${param:appName}/${self:provider.stage}/user-pool-client-id

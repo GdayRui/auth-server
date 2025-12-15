@@ -4,32 +4,36 @@ A serverless authentication server built with AWS Cognito, TypeScript, and the S
 
 ## Features
 
+- **Multi-App Support**: One auth server serving multiple isolated applications
 - **Username-Based Authentication**: Login with username/password (email optional)
 - **User Management**: Profile management with customizable attributes
 - **Self-Service Password Changes**: Users can change their own passwords when logged in
 - **Token Validation**: JWT token validation endpoints
-- **AWS Cognito Integration**: Secure user pool management
+- **AWS Cognito Integration**: Dedicated User Pool per application
+- **SSM Parameter Store**: Dynamic app configuration without redeployment
+- **Complete Isolation**: Users in one app cannot access another app
 - **Serverless Architecture**: Cost-effective AWS Lambda deployment
 - **Two-Stack Architecture**: Separate infrastructure and application deployments
 - **TypeScript**: Full type safety and better developer experience
 - **CI/CD Pipeline**: GitHub Actions for automated deployment
 
-## API Endpoints
+## API Documentation
 
-### Authentication
-- `POST /auth/login` - User login
-- `POST /auth/register` - User registration
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/logout` - User logout
+For complete API documentation including request/response examples, authentication flow, and error codes, see **[API.md](API.md)**.
 
-### Token Validation
-- `POST /token/validate` - Validate JWT token
+### Quick Overview
 
-### User Management
-- `GET /user/profile` - Get user profile
-- `PUT /user/profile` - Update user profile
-- `DELETE /user/profile` - Delete user account
-- `POST /user/change-password` - Change user password
+**Authentication:**
+- User registration and login
+- Token refresh and logout
+- JWT token validation
+
+**User Management:**
+- Get/update user profile
+- Change password
+- Delete account
+
+**Important:** All requests require the `X-App-ID` header to specify which application's User Pool to use.
 
 ## Setup
 
@@ -77,7 +81,20 @@ npm run lint
 
 ### Deployment
 
-#### Manual Deployment
+#### Deploy Infrastructure (Per App)
+
+Deploy infrastructure once for each application:
+
+```bash
+# Deploy User Pool for kids-chat app
+serverless deploy --config serverless-infrastructure.yml --stage dev --param="appName=kids-chat"
+
+# Deploy User Pool for another app
+serverless deploy --config serverless-infrastructure.yml --stage dev --param="appName=todo-app"
+```
+
+#### Deploy Application
+
 ```bash
 # Deploy to development
 npm run deploy:dev
@@ -86,86 +103,73 @@ npm run deploy:dev
 npm run deploy:prod
 ```
 
+**Note**: The application stack is deployed once and serves all apps dynamically based on the `X-App-ID` header.
+
 #### Automated Deployment
 The project uses GitHub Actions for CI/CD:
 
-- **Development**: Automatically deploys when pushing to `develop` branch
-- **Production**: Automatically deploys when pushing to `main` branch
+- **Infrastructure**: Manual trigger via GitHub Actions (per app)
+- **Application**: Automatically deploys when pushing to `develop` or `main` branch
 
 ### Required GitHub Secrets
 
 Configure these secrets in your GitHub repository:
 
 ```
-AWS_ACCESS_KEY_ID          # AWS access key
+AWS_ACCESS_KEY_ID          # AWS access key with Cognito & SSM permissions
 AWS_SECRET_ACCESS_KEY      # AWS secret key
 AWS_REGION                 # AWS region (default: ap-southeast-2)
-DEV_USER_POOL_ID          # Development Cognito User Pool ID
-DEV_USER_POOL_CLIENT_ID   # Development Cognito Client ID
-PROD_USER_POOL_ID         # Production Cognito User Pool ID
-PROD_USER_POOL_CLIENT_ID  # Production Cognito Client ID
 ```
 
-## API Usage Examples
+**Note**: User Pool IDs are no longer needed as secrets - they're stored in SSM Parameter Store and retrieved dynamically.
 
-### Registration
+## Quick Start
+
+See **[API.md](API.md)** for complete API documentation with detailed examples.
+
+**Basic Usage:**
+
 ```bash
-curl -X POST https://your-api-url/auth/register \
+# Register a user
+curl -X POST https://your-api-url/dev/auth/register \
   -H "Content-Type: application/json" \
-  -d '{
-    "username": "johndoe",
-    "password": "SecurePass123!",
-    "given_name": "John",
-    "family_name": "Doe",
-    "preferred_name": "Johnny",
-    "email": "john@example.com"
-  }'
-```
+  -H "X-App-ID: kids-chat" \
+  -d '{"username":"john","password":"john1234","given_name":"John","family_name":"Doe"}'
 
-**Note**: `email` and `preferred_name` are optional. `family_name` must be at least 1 character.
-
-### Login
-```bash
-curl -X POST https://your-api-url/auth/login \
+# Login
+curl -X POST https://your-api-url/dev/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "username": "johndoe",
-    "password": "SecurePass123!"
-  }'
+  -H "X-App-ID: kids-chat" \
+  -d '{"username":"john","password":"john1234"}'
 ```
 
-### Token Validation
-```bash
-curl -X POST https://your-api-url/token/validate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "token": "your-jwt-token"
-  }'
-```
-
-### Get User Profile
-```bash
-curl -X GET https://your-api-url/user/profile \
-  -H "Authorization: Bearer your-jwt-token"
-```
+**Remember:** All requests require the `X-App-ID` header!
 
 ## Configuration
 
-### AWS Cognito User Pool Settings
+### Multi-App Architecture
 
-The serverless.yml file automatically creates:
-- User Pool with email-based authentication
-- Password policy requirements
-- Email verification
-- User Pool Client for API access
+Each app gets its own Cognito User Pool:
+- **Infrastructure Stack**: `cognito-auth-infrastructure-{appName}-{stage}`
+- **User Pool Name**: `auth-{appName}-{stage}-user-pool`
+- **SSM Parameters**: `/auth-server/apps/{appName}/{stage}/user-pool-id`
+
+### User Pool Settings
+
+- Username-based authentication (not email)
+- Password policy: Min 8 chars with lowercase + numbers
+- Username: case-insensitive
+- Account recovery: Admin-only
+- Required attributes: `username`, `given_name`, `family_name`
+- Optional attributes: `email`
 
 ### Environment Variables
 
-Required environment variables:
-- `USER_POOL_ID`: AWS Cognito User Pool ID
-- `USER_POOL_CLIENT_ID`: AWS Cognito User Pool Client ID
+Required Lambda environment variables:
 - `REGION`: AWS region
 - `STAGE`: Deployment stage (dev/prod)
+
+**Note**: User Pool IDs are fetched from SSM Parameter Store at runtime based on `X-App-ID` header.
 
 ## Security Considerations
 
@@ -179,10 +183,45 @@ Required environment variables:
 
 Your web applications can integrate with this authentication server by:
 
-1. Redirecting users to the authentication endpoints
-2. Storing JWT tokens securely (HttpOnly cookies recommended)
-3. Including tokens in Authorization headers for protected requests
-4. Implementing token refresh logic before expiration
+1. **Set X-App-ID Header**: Include `X-App-ID: your-app-name` in all API requests
+2. **Registration**: Direct users to registration endpoint with app-specific header
+3. **Login**: Authenticate users and receive JWT tokens
+4. **Store Tokens**: Store JWT tokens securely (HttpOnly cookies recommended)
+5. **Protected Requests**: Include `Authorization: Bearer <token>` and `X-App-ID` headers
+6. **Token Refresh**: Implement token refresh logic before expiration
+
+### Example: React Integration
+
+```javascript
+const APP_ID = 'kids-chat';
+const API_URL = 'https://your-api-url';
+
+// Register user
+const register = async (userData) => {
+  const response = await fetch(`${API_URL}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-App-ID': APP_ID,
+    },
+    body: JSON.stringify(userData),
+  });
+  return response.json();
+};
+
+// Login user
+const login = async (username, password) => {
+  const response = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-App-ID': APP_ID,
+    },
+    body: JSON.stringify({ username, password }),
+  });
+  return response.json();
+};
+```
 
 ## Troubleshooting
 

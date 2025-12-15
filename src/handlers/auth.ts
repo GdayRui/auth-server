@@ -10,7 +10,8 @@ import {
   createResponse, 
   createErrorResponse, 
   parseRequestBody,
-  validateRequiredFields
+  validateRequiredFields,
+  getAppConfigFromEvent
 } from '../middleware/auth';
 import { AuthRequest, RegisterRequest, RefreshTokenRequest, AuthResponse } from '../types';
 
@@ -18,17 +19,15 @@ const cognitoClient = new CognitoIdentityProviderClient({
   region: process.env.REGION || 'ap-southeast-2' 
 });
 
-const USER_POOL_ID = process.env.USER_POOL_ID!;
-const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID!;
-
 export const login = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const appConfig = await getAppConfigFromEvent(event);
     const body: AuthRequest = parseRequestBody(event);
     validateRequiredFields(body, ['username', 'password']);
 
     const command = new AdminInitiateAuthCommand({
-      UserPoolId: USER_POOL_ID,
-      ClientId: USER_POOL_CLIENT_ID,
+      UserPoolId: appConfig.userPoolId,
+      ClientId: appConfig.userPoolClientId,
       AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
       AuthParameters: {
         USERNAME: body.username,
@@ -80,6 +79,7 @@ export const login = async (event: APIGatewayProxyEvent): Promise<APIGatewayProx
 
 export const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const appConfig = await getAppConfigFromEvent(event);
     const body: RegisterRequest = parseRequestBody(event);
     validateRequiredFields(body, ['username', 'password', 'given_name', 'family_name']);
 
@@ -106,15 +106,8 @@ export const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayP
       });
     }
 
-    if (body.preferred_name) {
-      userAttributes.push({
-        Name: 'preferred_name',
-        Value: body.preferred_name,
-      });
-    }
-
     const createCommand = new AdminCreateUserCommand({
-      UserPoolId: USER_POOL_ID,
+      UserPoolId: appConfig.userPoolId,
       Username: body.username,
       UserAttributes: userAttributes,
       MessageAction: MessageActionType.SUPPRESS,
@@ -124,7 +117,7 @@ export const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayP
     await cognitoClient.send(createCommand);
 
     const setPasswordCommand = new AdminSetUserPasswordCommand({
-      UserPoolId: USER_POOL_ID,
+      UserPoolId: appConfig.userPoolId,
       Username: body.username,
       Password: body.password,
       Permanent: true,
@@ -158,12 +151,13 @@ export const register = async (event: APIGatewayProxyEvent): Promise<APIGatewayP
 
 export const refreshToken = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const appConfig = await getAppConfigFromEvent(event);
     const body: RefreshTokenRequest = parseRequestBody(event);
     validateRequiredFields(body, ['refreshToken']);
 
     const command = new AdminInitiateAuthCommand({
-      UserPoolId: USER_POOL_ID,
-      ClientId: USER_POOL_CLIENT_ID,
+      UserPoolId: appConfig.userPoolId,
+      ClientId: appConfig.userPoolClientId,
       AuthFlow: 'REFRESH_TOKEN_AUTH',
       AuthParameters: {
         REFRESH_TOKEN: body.refreshToken,

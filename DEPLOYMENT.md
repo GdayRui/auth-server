@@ -8,18 +8,34 @@ This project uses a **two-stack deployment** architecture:
 
 ## Initial Setup
 
-### Step 1: Deploy Infrastructure (One-Time)
+### Step 1: Deploy Infrastructure (Per App)
 
+**IMPORTANT**: Deploy infrastructure once for each application that will use this auth server.
+
+**Via GitHub Actions:**
 1. Go to GitHub → Actions → "Deploy Infrastructure"
 2. Click "Run workflow"
 3. Select environment: `dev` or `prod`
-4. Select action: `deploy`
-5. Click "Run workflow"
+4. Enter app name (e.g., `kids-chat`)
+5. Select action: `deploy`
+6. Click "Run workflow"
 
-This creates the Cognito User Pool with the following configuration:
+**Via Command Line:**
+```bash
+serverless deploy --config serverless-infrastructure.yml --stage dev --param="appName=kids-chat"
+```
+
+This creates:
+- A dedicated Cognito User Pool for the app: `auth-{appName}-{stage}-user-pool`
+- SSM Parameters:
+  - `/auth-server/apps/{appName}/{stage}/user-pool-id`
+  - `/auth-server/apps/{appName}/{stage}/user-pool-client-id`
+
+User Pool configuration:
 - Username-based authentication (not email)
 - Required attributes: `username`, `given_name`, `family_name`, `password`
-- Optional attributes: `email`, `preferred_name`
+- Optional attributes: `email`
+- Password policy: Minimum 8 characters with lowercase and numbers
 - Password recovery: Admin-only
 - Username: case-insensitive
 
@@ -38,37 +54,45 @@ git push origin develop     # Deploys to development
 2. Click "Run workflow"
 3. Select environment: `dev` or `prod`
 
-## User Registration
+## Using the API
 
-New user registration requires:
-- `username` (required, unique, immutable)
-- `password` (required, 8+ chars with uppercase, lowercase, number, symbol)
-- `given_name` (required)
-- `family_name` (required, minimum 1 character)
-- `preferred_name` (optional)
+**CRITICAL**: All API requests must include the `X-App-ID` header to identify which User Pool to use.
+
+### User Registration
+
+```bash
+curl -X POST https://your-api-url/auth/register \
+  -H "Content-Type: application/json" \
+  -H "X-App-ID: kids-chat" \
+  -d '{
+    "username": "johndoe",
+    "password": "jd123123",
+    "given_name": "John",
+    "family_name": "Doe",
+    "email": "john@example.com"
+  }'
+```
+
+Required fields:
+- `username` (unique per app, immutable)
+- `password` (8+ chars with lowercase and numbers)
+- `given_name`
+- `family_name` (minimum 1 character)
 - `email` (optional, but unique if provided)
 
-Example:
-```json
-{
-  "username": "johndoe",
-  "password": "SecurePass123!",
-  "given_name": "John",
-  "family_name": "D",
-  "preferred_name": "Johnny",
-  "email": "john@example.com"
-}
+### User Login
+
+```bash
+curl -X POST https://your-api-url/auth/login \
+  -H "Content-Type: application/json" \
+  -H "X-App-ID: kids-chat" \
+  -d '{
+    "username": "johndoe",
+    "password": "jd123123"
+  }'
 ```
 
-## User Login
-
-Login with username and password:
-```json
-{
-  "username": "johndoe",
-  "password": "SecurePass123!"
-}
-```
+**Note**: Users can only login to the app they registered with. Cross-app authentication is not supported.
 
 ## Important Notes
 
@@ -92,30 +116,55 @@ To remove the infrastructure stack (⚠️ DELETES ALL USERS):
 2. Select action: `remove`
 3. This will delete the Cognito User Pool and all user data
 
-## Stack Dependencies
+## Multi-App Architecture
 
 ```
-Infrastructure Stack (cognito-auth-infrastructure-{stage})
-  └── Exports:
-      ├── user-pool-id
-      └── user-pool-client-id
+Infrastructure Stack (cognito-auth-infrastructure-{appName}-{stage})
+  └── Creates:
+      ├── User Pool: auth-{appName}-{stage}-user-pool
+      └── SSM Parameters:
+          ├── /auth-server/apps/{appName}/{stage}/user-pool-id
+          └── /auth-server/apps/{appName}/{stage}/user-pool-client-id
           ↓
 Application Stack (cognito-auth-server-{stage})
-  └── Imports infrastructure exports
-  └── Creates Lambda functions and API Gateway
+  └── Lambda functions read app config from SSM at runtime
+  └── Routes requests based on X-App-ID header
+  └── One application stack serves all apps
 ```
+
+### Example: Multiple Apps
+
+```bash
+# Deploy infrastructure for kids-chat app
+serverless deploy --config serverless-infrastructure.yml --stage dev --param="appName=kids-chat"
+
+# Deploy infrastructure for todo-app
+serverless deploy --config serverless-infrastructure.yml --stage dev --param="appName=todo-app"
+
+# Deploy application once (serves both apps)
+serverless deploy --stage dev
+```
+
+Now users in `kids-chat` are completely isolated from users in `todo-app`.
 
 ## Troubleshooting
 
-### "Export not found" error
-The application stack cannot find the infrastructure exports. Ensure:
-1. Infrastructure stack is deployed first
-2. Stage names match (dev/prod)
-3. Stack names are correct in `serverless.yml`
+### Missing X-App-ID header
+Error: `X-App-ID header is required`
+- Ensure all API requests include the `X-App-ID` header
+
+### Invalid or unregistered app
+Error: `App 'xyz' is not registered or does not exist in stage 'dev'`
+- The app has not been deployed via infrastructure stack
+- Deploy infrastructure with `--param="appName=xyz"`
+- Verify SSM parameter exists: `/auth-server/apps/xyz/dev/user-pool-id`
 
 ### User Pool already exists
-If you get conflicts, check AWS CloudFormation console for existing stacks.
+If you get conflicts during infrastructure deployment:
+- Check AWS CloudFormation console for existing stacks
+- Stack name format: `cognito-auth-infrastructure-{appName}-{stage}`
 
 ### Authentication issues
-- Verify User Pool ID and Client ID in CloudFormation outputs
-- Check Lambda environment variables match infrastructure exports
+- Verify User Pool ID in SSM Parameter Store
+- Check CloudWatch logs for Lambda errors
+- Ensure app name in X-App-ID matches deployed infrastructure

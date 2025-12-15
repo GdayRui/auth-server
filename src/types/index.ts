@@ -8,7 +8,6 @@ export interface RegisterRequest {
   password: string;
   given_name: string;
   family_name: string;
-  preferred_name?: string;
   email?: string;
 }
 
@@ -24,7 +23,6 @@ export interface ChangePasswordRequest {
 export interface UpdateUserRequest {
   given_name?: string;
   family_name?: string;
-  preferred_name?: string;
   email?: string;
 }
 
@@ -33,7 +31,6 @@ export interface CognitoUser {
   email?: string;
   given_name: string;
   family_name: string;
-  preferred_name?: string;
   emailVerified?: boolean;
   enabled: boolean;
   userStatus: string;
@@ -72,4 +69,10 @@ export interface ErrorResponse {
   error: string;
   message: string;
   details?: string;
+}
+
+export interface AppConfig {
+  appId: string;
+  userPoolId: string;
+  userPoolClientId: string;
 }

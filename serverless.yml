@@ -7,15 +7,7 @@ provider:
   stage: ${opt:stage, 'dev'}
   deploymentBucket:
     name: gdayrui-deployments-bucket
-  httpApi:
-    cors: true
-  apiGateway:
-    shouldStartNameWithService: true
   environment:
-    USER_POOL_ID:
-      Fn::ImportValue: ${self:custom.userPoolStackName}-user-pool-id
-    USER_POOL_CLIENT_ID:
-      Fn::ImportValue: ${self:custom.userPoolStackName}-user-pool-client-id
     REGION: ${self:provider.region}
     STAGE: ${self:provider.stage}
   iamRoleStatements:
@@ -31,6 +23,12 @@ provider:
         - cognito-idp:ListUsers
       Resource: 
         - arn:aws:cognito-idp:${self:provider.region}:*:userpool/*
+    - Effect: Allow
+      Action:
+        - ssm:GetParameter
+        - ssm:GetParameters
+      Resource:
+        - arn:aws:ssm:${self:provider.region}:*:parameter/auth-server/apps/*
 
 plugins:
   - serverless-offline
@@ -43,7 +41,17 @@ package:
     - 'node_modules/**'
 
 custom:
-  userPoolStackName: cognito-auth-infrastructure-${self:provider.stage}
+  corsConfig:
+    origin: '*'
+    headers:
+      - Content-Type
+      - X-Amz-Date
+      - Authorization
+      - X-Api-Key
+      - X-Amz-Security-Token
+      - X-Amz-User-Agent
+      - X-App-ID
+    allowCredentials: false
 
 functions:
   # Authentication endpoints
@@ -53,7 +61,7 @@ functions:
       - http:
           path: /auth/login
           method: post
-          cors: true
+          cors: ${self:custom.corsConfig}
 
   register:
     handler: dist/handlers/auth.register
@@ -61,7 +69,7 @@ functions:
       - http:
           path: /auth/register
           method: post
-          cors: true
+          cors: ${self:custom.corsConfig}
 
   refreshToken:
     handler: dist/handlers/auth.refreshToken
@@ -69,7 +77,7 @@ functions:
       - http:
           path: /auth/refresh
           method: post
-          cors: true
+          cors: ${self:custom.corsConfig}
 
   logout:
     handler: dist/handlers/auth.logout
@@ -77,7 +85,7 @@ functions:
       - http:
           path: /auth/logout
           method: post
-          cors: true
+          cors: ${self:custom.corsConfig}
 
   # Token validation
   validateToken:
@@ -86,7 +94,7 @@ functions:
       - http:
           path: /token/validate
           method: post
-          cors: true
+          cors: ${self:custom.corsConfig}
 
   # User management
   getUser:
@@ -95,7 +103,7 @@ functions:
       - http:
           path: /user/profile
           method: get
-          cors: true
+          cors: ${self:custom.corsConfig}
 
   updateUser:
     handler: dist/handlers/user.updateUser
@@ -103,7 +111,7 @@ functions:
       - http:
           path: /user/profile
           method: put
-          cors: true
+          cors: ${self:custom.corsConfig}
 
   deleteUser:
     handler: dist/handlers/user.deleteUser
@@ -111,7 +119,7 @@ functions:
       - http:
           path: /user/profile
           method: delete
-          cors: true
+          cors: ${self:custom.corsConfig}
 
   changePassword:
     handler: dist/handlers/user.changePassword
@@ -119,7 +127,7 @@ functions:
       - http:
           path: /user/change-password
           method: post
-          cors: true
+          cors: ${self:custom.corsConfig}
 
 resources:
   Outputs:

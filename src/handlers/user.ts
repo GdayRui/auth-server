@@ -11,7 +11,8 @@ import {
   createErrorResponse, 
   parseRequestBody,
   getAuthHeader,
-  validateRequiredFields
+  validateRequiredFields,
+  getAppConfigFromEvent
 } from '../middleware/auth';
 import { UpdateUserRequest, ChangePasswordRequest, CognitoUser } from '../types';
 import jwt from 'jsonwebtoken';
@@ -19,8 +20,6 @@ import jwt from 'jsonwebtoken';
 const cognitoClient = new CognitoIdentityProviderClient({ 
   region: process.env.REGION || 'ap-southeast-2' 
 });
-
-const USER_POOL_ID = process.env.USER_POOL_ID!;
 
 const getUserFromToken = (token: string): { username: string } => {
   const decoded = jwt.decode(token) as jwt.JwtPayload & { username?: string };
@@ -31,11 +30,12 @@ const getUserFromToken = (token: string): { username: string } => {
 
 export const getUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const appConfig = await getAppConfigFromEvent(event);
     const token = getAuthHeader(event);
     const { username } = getUserFromToken(token);
 
     const command = new AdminGetUserCommand({
-      UserPoolId: USER_POOL_ID,
+      UserPoolId: appConfig.userPoolId,
       Username: username,
     });
 
@@ -53,7 +53,6 @@ export const getUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       email: userAttributes.email,
       given_name: userAttributes.given_name,
       family_name: userAttributes.family_name,
-      preferred_name: userAttributes.preferred_name,
       emailVerified: userAttributes.email_verified === 'true',
       enabled: response.Enabled || false,
       userStatus: response.UserStatus!,
@@ -80,6 +79,7 @@ export const getUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
 export const updateUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const appConfig = await getAppConfigFromEvent(event);
     const token = getAuthHeader(event);
     const { username } = getUserFromToken(token);
     const body: UpdateUserRequest = parseRequestBody(event);
@@ -106,13 +106,6 @@ export const updateUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
       });
     }
 
-    if (body.preferred_name !== undefined) {
-      userAttributes.push({
-        Name: 'preferred_name',
-        Value: body.preferred_name,
-      });
-    }
-
     if (body.email !== undefined) {
       userAttributes.push({
         Name: 'email',
@@ -125,7 +118,7 @@ export const updateUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
     }
 
     const command = new AdminUpdateUserAttributesCommand({
-      UserPoolId: USER_POOL_ID,
+      UserPoolId: appConfig.userPoolId,
       Username: username,
       UserAttributes: userAttributes,
     });
@@ -150,11 +143,12 @@ export const updateUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
 
 export const deleteUser = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const appConfig = await getAppConfigFromEvent(event);
     const token = getAuthHeader(event);
     const { username } = getUserFromToken(token);
 
     const command = new AdminDeleteUserCommand({
-      UserPoolId: USER_POOL_ID,
+      UserPoolId: appConfig.userPoolId,
       Username: username,
     });
 
@@ -178,6 +172,7 @@ export const deleteUser = async (event: APIGatewayProxyEvent): Promise<APIGatewa
 
 export const changePassword = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    const appConfig = await getAppConfigFromEvent(event);
     const token = getAuthHeader(event);
     const { username } = getUserFromToken(token);
     const body: ChangePasswordRequest = parseRequestBody(event);
@@ -187,7 +182,7 @@ export const changePassword = async (event: APIGatewayProxyEvent): Promise<APIGa
     // Note: In a production environment, you might want to verify the old password first
     // For this example, we'll directly set the new password
     const command = new AdminSetUserPasswordCommand({
-      UserPoolId: USER_POOL_ID,
+      UserPoolId: appConfig.userPoolId,
       Username: username,
       Password: body.newPassword,
       Permanent: true,
