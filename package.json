@@ -8,6 +8,7 @@
     "deploy": "serverless deploy",
     "deploy:dev": "serverless deploy --stage dev",
     "deploy:prod": "serverless deploy --stage prod",
+    "deploy:training": "serverless deploy --stage training",
     "offline": "serverless offline",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
