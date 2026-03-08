@@ -4,28 +4,29 @@ on:
   workflow_dispatch:
     inputs:
       appId:
-        description: 'Application ID'
+        description: "Application ID"
         required: true
         type: choice
         options:
           - kids-chat
-        default: 'kids-chat'
+        default: "kids-chat"
       environment:
-        description: 'Environment to deploy infrastructure to'
+        description: "Environment to deploy infrastructure to"
         required: true
         type: choice
         options:
           - dev
           - prod
-        default: 'dev'
+          - training
+        default: "dev"
       action:
-        description: 'Action to perform'
+        description: "Action to perform"
         required: true
         type: choice
         options:
           - deploy
           - remove
-        default: 'deploy'
+        default: "deploy"
 
 jobs:
   deploy-infrastructure:
@@ -38,8 +39,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -62,11 +63,11 @@ jobs:
           STACK_NAME="cognito-auth-infrastructure-${{ inputs.appId }}-${{ inputs.environment }}"
           USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }} --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" --output text)
           USER_POOL_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }} --query "Stacks[0].Outputs[?OutputKey=='UserPoolClientId'].OutputValue" --output text)
-          
+
           # Create SSM parameters
           aws ssm put-parameter --name "/auth-server/apps/${{ inputs.appId }}/${{ inputs.environment }}/user-pool-id" --value "$USER_POOL_ID" --type String --overwrite --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
           aws ssm put-parameter --name "/auth-server/apps/${{ inputs.appId }}/${{ inputs.environment }}/user-pool-client-id" --value "$USER_POOL_CLIENT_ID" --type String --overwrite --region ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
-          
+
           echo "SSM Parameters created successfully"
 
       - name: Remove SSM Parameters
