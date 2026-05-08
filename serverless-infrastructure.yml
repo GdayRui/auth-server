@@ -1,4 +1,4 @@
-service: cognito-auth-infrastructure
+service: cognito-auth-infrastructure-${opt:appName}
 
 provider:
   name: aws
@@ -18,7 +18,7 @@ resources:
       Type: AWS::Cognito::UserPool
       Properties:
         UserPoolName: auth-${param:appName}-${self:provider.stage}-user-pool
-        UsernameAttributes: []  # Username is primary identifier
+        UsernameAttributes: [] # Username is primary identifier
         UsernameConfiguration:
           CaseSensitive: false
         Policies:
