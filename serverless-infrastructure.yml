@@ -1,4 +1,4 @@
-service: cognito-auth-infrastructure-${param:appName}
+service: cognito-auth-infrastructure
 
 provider:
   name: aws
