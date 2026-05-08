@@ -54,7 +54,7 @@ jobs:
 
       - name: Deploy Infrastructure
         if: inputs.action == 'deploy'
-        run: npx serverless deploy --config serverless-infrastructure.yml --stage ${{ inputs.environment }} --appName=${{ inputs.appId }}
+        run: npx serverless deploy --config serverless-infrastructure.yml --stage ${{ inputs.environment }} --param="appName=${{ inputs.appId }}"
 
       - name: Create SSM Parameters
         if: inputs.action == 'deploy'
@@ -79,7 +79,7 @@ jobs:
 
       - name: Remove Infrastructure
         if: inputs.action == 'remove'
-        run: npx serverless remove --config serverless-infrastructure.yml --stage ${{ inputs.environment }} --appName=${{ inputs.appId }}
+        run: npx serverless remove --config serverless-infrastructure.yml --stage ${{ inputs.environment }} --param="appName=${{ inputs.appId }}"
 
       - name: Output Results
         if: inputs.action == 'deploy'
